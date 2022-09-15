@@ -7,7 +7,7 @@ const cors=require('cors')
 app.use(express.static('public'));
 app.use(express.json());
 app.use(express.urlencoded({extended:true}));
-
+const port= process.env.PORT || 3000
 const Db='mongodb+srv://Shivam:2001@cluster0.bxo7vjp.mongodb.net/DemoData';
 
 mongoose.connect(Db).then(()=>{
@@ -52,4 +52,4 @@ app.get('/data', async (req,resp)=>{
     resp.send(JSON.stringify(data))
  
 })
-app.listen(3000)
+app.listen(port)
