@@ -16,6 +16,7 @@ mongoose.connect(Db).then(()=>{
 }).catch((err)=>console.log(err))
 
 const Test= new Schema({
+    __id:String,
     name:{
         type:String,
         required:[true,'full name not provided , you cannot submit data without name']
@@ -35,6 +36,7 @@ app.get('/',(req,resp)=>{
 
 app.post('/signup', async(req,resp)=>{
     let formData={
+        __id:req.body.id,
         name:req.body.name,
         email:req.body.email,
         phone:req.body.phone,
@@ -47,10 +49,23 @@ app.post('/signup', async(req,resp)=>{
     return resp.redirect('/')
 })
 
+
 app.get('/data', async (req,resp)=>{
     const DbModel=new model('Data',Test)
     const data= await DbModel.find({})
     resp.send(JSON.stringify(data))
+ 
+})
+app.get('/data/:key', async (req,resp)=>{
+    const DbModel=new model('Data',Test)
+    const data= await DbModel.find({
+        "$or":[
+            {"__id":{$regex:req.params.key}}
+        ]
+    })
+
+    resp.send(JSON.stringify(data))
+    
  
 })
 app.listen(port)
