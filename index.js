@@ -28,9 +28,9 @@ const Test= new Schema({
     phone:String,
     feedback:String
 })
-app.get('/',(req,resp)=>{
 
-   return resp.redirect('index.html')
+app.get('/',(req,resp)=>{
+    resp.sendFile(__dirname+"/public/index.html")
 })
 
 app.post('/signup', async(req,resp)=>{
