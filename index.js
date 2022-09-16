@@ -1,71 +1,91 @@
-const express=require('express')
-const mongoose=require('mongoose')
-const { Schema, model } = require('mongoose')
-const app=express();
-const cors=require('cors')
+const express = require("express");
+const app = express();
+const cors = require("cors");
+const mongoose = require("mongoose");
+const { Schema, model } = require("mongoose");
 
-app.use(cors());
-app.use(express.static('public'));
+const port = process.env.PORT || 5000;
+
 app.use(express.json());
-app.use(express.urlencoded({extended:true}));
-const port= process.env.PORT || 3000
-const Db='mongodb+srv://Shivam:2001@cluster0.bxo7vjp.mongodb.net/DemoData';
+app.use(express.static('public'))
+app.use(cors());
+app.use(express.urlencoded({ extended: true }));
 
-mongoose.connect(Db).then(()=>{
-    console.log('connected to atlas')
-}).catch((err)=>console.log(err))
+// db connection starts ****************************************//
 
-const Test= new Schema({
-    __id:String,
-    name:{
-        type:String,
-        required:[true,'full name not provided , you cannot submit data without name']
-    },
-    email:{
-        type:String,
-        unique:[true,"email already exists in database!"],
-        required:[true,"email not provided , cannot submit without email"]
-    },
-    phone:String,
-    feedback:String
-})
+mongoose.connect(
+  "mongodb+srv://Shivam:2001@cluster0.bxo7vjp.mongodb.net/DemoData",
+  {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  }
+);
 
-app.get('/',(req,resp)=>{
-    resp.sendFile(__dirname+"/public/index.html")
-})
+const userSchema = new Schema({
+  name: String,
+  email: String,
+  password: String,
+});
 
-app.post('/signup', async(req,resp)=>{
-    let formData={
-        __id:req.body.id,
-        name:req.body.name,
-        email:req.body.email,
-        phone:req.body.phone,
-        feedback:req.body.feedback
+const user = model("USER", userSchema);
+//db connection ends *******************************************//
+
+// home page ***************************************************//
+app.get("/", async (req, resp) => {
+  resp.sendFile(__dirname+"/public/index.html")
+});
+//  home page code ends here ***********************************//
+
+// user login page code  ****************************************//
+
+app.post("/login", (req, resp) => {
+  const data = {
+    email: req.body.email,
+    password: req.body.password,
+  };
+  console.log(data);
+  user.findOne({ email: data.email }, (err, users) => {
+    if (users) {
+      if (users.password === data.password) {
+        resp.send({ message: "Login Successful", user: users });
+      } else {
+        resp.send({ message: "Incorrect Password" });
+      }
+    } else {
+      console.log(users);
+      resp.send({ message: "User not Registered" });
     }
-    const DbModel=new model('Data',Test)
-    const result= new DbModel(formData)
-    const data=await  result.save()
-    console.log(data)
-    return resp.redirect('/')
-})
+  });
+});
 
+// user login code ends here **************************************//
 
-app.get('/data', async (req,resp)=>{
-    const DbModel=new model('Data',Test)
-    const data= await DbModel.find({})
-    resp.send(JSON.stringify(data))
- 
-})
-app.get('/data/:key', async (req,resp)=>{
-    const DbModel=new model('Data',Test)
-    const data= await DbModel.find({
-        "$or":[
-            {"__id":{$regex:req.params.key}}
-        ]
-    })
+// user registartion code  *****************************************//
 
-    resp.send(JSON.stringify(data))
-    
- 
-})
-app.listen(port)
+app.post("/register", (req, resp) => {
+  const data = {
+    name: req.body.name,
+    email: req.body.email,
+    password: req.body.password,
+  };
+  user.findOne({ email: data.email }, (err, users) => {
+    if (users) {
+      resp.send({ message: "User already registered" });
+    } else {
+      const myData = new user(data);
+      myData.save((err) => {
+        if (!err) {
+          resp.send({ message: "Registration Successful" });
+        } else {
+          console.log(err);
+        }
+      });
+    }
+  });
+});
+
+// user registration code ends here *************************************//
+
+app.listen(port, () => {
+  console.log("listening ont port ", port);
+});
