@@ -1,91 +1,71 @@
-const express = require("express");
-const app = express();
-const cors = require("cors");
-const mongoose = require("mongoose");
-const { Schema, model } = require("mongoose");
+const express=require('express')
+const mongoose=require('mongoose')
+const { Schema, model } = require('mongoose')
+const app=express();
+const cors=require('cors')
 
-const port = process.env.PORT || 5000;
-
-app.use(express.json());
-app.use(express.static('public'))
 app.use(cors());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.static('public'));
+app.use(express.json());
+app.use(express.urlencoded({extended:true}));
+const port= process.env.PORT || 3000
+const Db='mongodb+srv://Shivam:2001@cluster0.bxo7vjp.mongodb.net/DemoData';
 
-// db connection starts ****************************************//
+mongoose.connect(Db).then(()=>{
+    console.log('connected to atlas')
+}).catch((err)=>console.log(err))
 
-mongoose.connect(
-  "mongodb+srv://Shivam:2001@cluster0.bxo7vjp.mongodb.net/DemoData",
-  {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  }
-);
+const Test= new Schema({
+    __id:String,
+    name:{
+        type:String,
+        required:[true,'full name not provided , you cannot submit data without name']
+    },
+    email:{
+        type:String,
+        unique:[true,"email already exists in database!"],
+        required:[true,"email not provided , cannot submit without email"]
+    },
+    phone:String,
+    feedback:String
+})
 
-const userSchema = new Schema({
-  name: String,
-  email: String,
-  password: String,
-});
+app.get('/',(req,resp)=>{
+    resp.sendFile(__dirname+"/public/index.html")
+})
 
-const user = model("USER", userSchema);
-//db connection ends *******************************************//
-
-// home page ***************************************************//
-app.get("/", async (req, resp) => {
-  resp.sendFile(__dirname+"/public/index.html")
-});
-//  home page code ends here ***********************************//
-
-// user login page code  ****************************************//
-
-app.post("/login", (req, resp) => {
-  const data = {
-    email: req.body.email,
-    password: req.body.password,
-  };
-  console.log(data);
-  user.findOne({ email: data.email }, (err, users) => {
-    if (users) {
-      if (users.password === data.password) {
-        resp.send({ message: "Login Successful", user: users });
-      } else {
-        resp.send({ message: "Incorrect Password" });
-      }
-    } else {
-      console.log(users);
-      resp.send({ message: "User not Registered" });
+app.post('/signup', async(req,resp)=>{
+    let formData={
+        __id:req.body.id,
+        name:req.body.name,
+        email:req.body.email,
+        phone:req.body.phone,
+        feedback:req.body.feedback
     }
-  });
-});
+    const DbModel=new model('Data',Test)
+    const result= new DbModel(formData)
+    const data=await  result.save()
+    console.log(data)
+    return resp.redirect('/')
+})
 
-// user login code ends here **************************************//
 
-// user registartion code  *****************************************//
+app.get('/data', async (req,resp)=>{
+    const DbModel=new model('Data',Test)
+    const data= await DbModel.find({})
+    resp.send(JSON.stringify(data))
+ 
+})
+app.get('/data/:key', async (req,resp)=>{
+    const DbModel=new model('Data',Test)
+    const data= await DbModel.find({
+        "$or":[
+            {"__id":{$regex:req.params.key}}
+        ]
+    })
 
-app.post("/register", (req, resp) => {
-  const data = {
-    name: req.body.name,
-    email: req.body.email,
-    password: req.body.password,
-  };
-  user.findOne({ email: data.email }, (err, users) => {
-    if (users) {
-      resp.send({ message: "User already registered" });
-    } else {
-      const myData = new user(data);
-      myData.save((err) => {
-        if (!err) {
-          resp.send({ message: "Registration Successful" });
-        } else {
-          console.log(err);
-        }
-      });
-    }
-  });
-});
-
-// user registration code ends here *************************************//
-
-app.listen(port, () => {
-  console.log("listening ont port ", port);
-});
+    resp.send(JSON.stringify(data))
+    
+ 
+})
+app.listen(port)
