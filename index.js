@@ -34,6 +34,10 @@ const user = model("USER", userSchema);
 app.get("/", async (req, resp) => {
   resp.sendFile(__dirname+"/public/index.html")
 });
+app.get("/data",  (req, resp) => {
+  const data = user.find({});
+  resp.send(JSON.stringify(data));
+});
 //  home page code ends here ***********************************//
 
 // user login page code  ****************************************//
